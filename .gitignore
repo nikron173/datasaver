@@ -1,0 +1,20 @@
+# Compiled binaries and local executables
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binaries built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+*.coverprofile
+profile.cov
+
+# Go workspace file (local development only)
+go.work
+go.work.sum
+
+bin/
