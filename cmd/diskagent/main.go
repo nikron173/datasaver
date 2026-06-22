@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/nikron173/diskagent/internal/cli"
+	"github.com/nikron173/datasaver/internal/cli"
 )
 
 func main() {

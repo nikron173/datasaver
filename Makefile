@@ -1,12 +1,27 @@
-APP_NAME ?= diskagent
+APP_NAME ?= datasaver
+APP_DISK_AGENT ?= diskagent
+APP_MEDIA_AGENT ?= mediaagent
 
-clean:
-	@rm -rf ./bin
+prepare:
+	go mod tidy
 
-build: clean
+gen-proto:
+	protoc --go_out=. --go-grpc_out=. api/proto/backup.proto
+
+clean-diskagent:
+	@rm -f ./bin/$(APP_DISK_AGENT)
+
+clean-mediaagent:
+	@rm -f ./bin/$(APP_MEDIA_AGENT)
+
+clean-all: clean-diskagent clean-mediaagent
+
+build-diskagent: clean-diskagent
 	@mkdir -p ./bin
-	@go mod tidy
-	@go build -o ./bin/$(APP_NAME) ./cmd/$(APP_NAME)
+	@go build -o ./bin/$(APP_DISK_AGENT) ./cmd/$(APP_DISK_AGENT)
 
-run: build
-	@./bin/$(APP_NAME)
+build-mediaagent: clean-mediaagent
+	@mkdir -p ./bin
+	@go build -o ./bin/$(APP_MEDIA_AGENT) ./cmd/$(APP_MEDIA_AGENT)
+
+build-all: build-diskagent build-mediaagent

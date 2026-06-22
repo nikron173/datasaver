@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 
 	"github.com/klauspost/compress/zstd"
-	"github.com/nikron173/diskagent/internal/archive"
-	"github.com/nikron173/diskagent/pkg/utils"
+	"github.com/nikron173/datasaver/internal/archive"
+	"github.com/nikron173/datasaver/pkg/utils"
 )
 
 type FileSystemRestore struct {

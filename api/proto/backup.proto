@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package backup;
+
+// Явно указываем, в какой Go-пакет сгенерировать код
+option go_package = "internal/pb";
+
+// Описываем службу резервного копирования
+service BackupService {
+  // Метод принимает поток чанков от клиента и возвращает один финальный ответ
+  rpc StreamBackup (stream BackupChunk) returns (BackupResponse);
+}
+
+// Структура одного сетевого пакета (чанка) в потоке
+message BackupChunk {
+  // Мы используем "oneof", чтобы разделять типы пакетов внутри одного стрима.
+  // Это позволяет экономить трафик и не слать имя файла в каждом пакете данных.
+  oneof payload {
+    FileMetadata metadata = 1; // Шлется один раз перед началом передачи файла
+    bytes data_block      = 2; // Шлется многократно кусками по 64 КБ (тело файла)
+  }
+}
+
+// Метаданные файла (аналог нашего старого бинарного заголовка)
+message FileMetadata {
+  string file_path = 1; // Абсолютный путь к файлу
+  int64  size      = 2; // Общий размер файла в байтах
+  uint32 mode      = 3; // Права доступа Linux
+}
+
+// Ответ от сервера после завершения бэкапа
+message BackupResponse {
+  bool   success       = 1; // Успешно ли записан бэкап
+  int64  total_files   = 2; // Сколько файлов было обработано
+  int64  total_bytes   = 3; // Сколько байт (несжатых) получено
+  string error_message = 4; // Описание ошибки, если success == false
+}
