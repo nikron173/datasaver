@@ -5,6 +5,7 @@ clean:
 
 build: clean
 	@mkdir -p ./bin
+	@go mod tidy
 	@go build -o ./bin/$(APP_NAME) ./cmd/$(APP_NAME)
 
 run: build
