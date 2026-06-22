@@ -1,6 +1,6 @@
-package models
+package archive
 
-// Структура заголовка файла для нашего бинарного формата
+// FileHeader описывает структуру бинарного заголовка файла в потоке
 type FileHeader struct {
 	PathSize int32  // 4 байта под длину пути файла
 	Size     int64  // 8 байт под размер самого файла
