@@ -237,6 +237,132 @@ func (x *BackupResponse) GetErrorMessage() string {
 	return ""
 }
 
+type RestoreRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RestoreRequest) Reset() {
+	*x = RestoreRequest{}
+	mi := &file_api_proto_backup_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestoreRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestoreRequest) ProtoMessage() {}
+
+func (x *RestoreRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_backup_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestoreRequest.ProtoReflect.Descriptor instead.
+func (*RestoreRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_backup_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *RestoreRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+type RestoreChunk struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Payload:
+	//
+	//	*RestoreChunk_Metadata
+	//	*RestoreChunk_DataBlock
+	Payload       isRestoreChunk_Payload `protobuf_oneof:"payload"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RestoreChunk) Reset() {
+	*x = RestoreChunk{}
+	mi := &file_api_proto_backup_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestoreChunk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestoreChunk) ProtoMessage() {}
+
+func (x *RestoreChunk) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_backup_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestoreChunk.ProtoReflect.Descriptor instead.
+func (*RestoreChunk) Descriptor() ([]byte, []int) {
+	return file_api_proto_backup_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *RestoreChunk) GetPayload() isRestoreChunk_Payload {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+func (x *RestoreChunk) GetMetadata() *FileMetadata {
+	if x != nil {
+		if x, ok := x.Payload.(*RestoreChunk_Metadata); ok {
+			return x.Metadata
+		}
+	}
+	return nil
+}
+
+func (x *RestoreChunk) GetDataBlock() []byte {
+	if x != nil {
+		if x, ok := x.Payload.(*RestoreChunk_DataBlock); ok {
+			return x.DataBlock
+		}
+	}
+	return nil
+}
+
+type isRestoreChunk_Payload interface {
+	isRestoreChunk_Payload()
+}
+
+type RestoreChunk_Metadata struct {
+	Metadata *FileMetadata `protobuf:"bytes,1,opt,name=metadata,proto3,oneof"`
+}
+
+type RestoreChunk_DataBlock struct {
+	DataBlock []byte `protobuf:"bytes,2,opt,name=data_block,json=dataBlock,proto3,oneof"`
+}
+
+func (*RestoreChunk_Metadata) isRestoreChunk_Payload() {}
+
+func (*RestoreChunk_DataBlock) isRestoreChunk_Payload() {}
+
 var File_api_proto_backup_proto protoreflect.FileDescriptor
 
 const file_api_proto_backup_proto_rawDesc = "" +
@@ -257,9 +383,18 @@ const file_api_proto_backup_proto_rawDesc = "" +
 	"totalFiles\x12\x1f\n" +
 	"\vtotal_bytes\x18\x03 \x01(\x03R\n" +
 	"totalBytes\x12#\n" +
-	"\rerror_message\x18\x04 \x01(\tR\ferrorMessage2N\n" +
-	"\rBackupService\x12=\n" +
-	"\fStreamBackup\x12\x13.backup.BackupChunk\x1a\x16.backup.BackupResponse(\x01B\rZ\vinternal/pbb\x06proto3"
+	"\rerror_message\x18\x04 \x01(\tR\ferrorMessage\"/\n" +
+	"\x0eRestoreRequest\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\"n\n" +
+	"\fRestoreChunk\x122\n" +
+	"\bmetadata\x18\x01 \x01(\v2\x14.backup.FileMetadataH\x00R\bmetadata\x12\x1f\n" +
+	"\n" +
+	"data_block\x18\x02 \x01(\fH\x00R\tdataBlockB\t\n" +
+	"\apayload2\x93\x01\n" +
+	"\x11MediaAgentService\x12=\n" +
+	"\fStreamBackup\x12\x13.backup.BackupChunk\x1a\x16.backup.BackupResponse(\x01\x12?\n" +
+	"\rStreamRestore\x12\x16.backup.RestoreRequest\x1a\x14.backup.RestoreChunk0\x01B\rZ\vinternal/pbb\x06proto3"
 
 var (
 	file_api_proto_backup_proto_rawDescOnce sync.Once
@@ -273,21 +408,26 @@ func file_api_proto_backup_proto_rawDescGZIP() []byte {
 	return file_api_proto_backup_proto_rawDescData
 }
 
-var file_api_proto_backup_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_api_proto_backup_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_api_proto_backup_proto_goTypes = []any{
 	(*BackupChunk)(nil),    // 0: backup.BackupChunk
 	(*FileMetadata)(nil),   // 1: backup.FileMetadata
 	(*BackupResponse)(nil), // 2: backup.BackupResponse
+	(*RestoreRequest)(nil), // 3: backup.RestoreRequest
+	(*RestoreChunk)(nil),   // 4: backup.RestoreChunk
 }
 var file_api_proto_backup_proto_depIdxs = []int32{
 	1, // 0: backup.BackupChunk.metadata:type_name -> backup.FileMetadata
-	0, // 1: backup.BackupService.StreamBackup:input_type -> backup.BackupChunk
-	2, // 2: backup.BackupService.StreamBackup:output_type -> backup.BackupResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	1, // 1: backup.RestoreChunk.metadata:type_name -> backup.FileMetadata
+	0, // 2: backup.MediaAgentService.StreamBackup:input_type -> backup.BackupChunk
+	3, // 3: backup.MediaAgentService.StreamRestore:input_type -> backup.RestoreRequest
+	2, // 4: backup.MediaAgentService.StreamBackup:output_type -> backup.BackupResponse
+	4, // 5: backup.MediaAgentService.StreamRestore:output_type -> backup.RestoreChunk
+	4, // [4:6] is the sub-list for method output_type
+	2, // [2:4] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_backup_proto_init() }
@@ -299,13 +439,17 @@ func file_api_proto_backup_proto_init() {
 		(*BackupChunk_Metadata)(nil),
 		(*BackupChunk_DataBlock)(nil),
 	}
+	file_api_proto_backup_proto_msgTypes[4].OneofWrappers = []any{
+		(*RestoreChunk_Metadata)(nil),
+		(*RestoreChunk_DataBlock)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_backup_proto_rawDesc), len(file_api_proto_backup_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

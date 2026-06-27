@@ -1,4 +1,4 @@
-package media
+package mediaagent
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 type TargetStorage interface {
 	// OpenSession создает архивный файл или объект для конкретной сессии бэкапа
 	OpenSession(sessionID string) (io.WriteCloser, error)
+	FindSession(sessionID string) (io.ReadCloser, error)
 }
 
 // LocalDiskStorage реализует хранение бэкапов в локальной директории сервера
@@ -28,4 +29,9 @@ func NewLocalDiskStorage(baseDir string) (*LocalDiskStorage, error) {
 func (lds *LocalDiskStorage) OpenSession(sessionID string) (io.WriteCloser, error) {
 	archivePath := filepath.Join(lds.BaseDir, fmt.Sprintf("%s.dpbak.zst", sessionID))
 	return os.Create(archivePath)
+}
+
+func (lds *LocalDiskStorage) FindSession(sessionID string) (io.ReadCloser, error) {
+	archivePath := filepath.Join(lds.BaseDir, fmt.Sprintf("%s.dpbak.zst", sessionID))
+	return os.Open(archivePath)
 }

@@ -19,30 +19,33 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	BackupService_StreamBackup_FullMethodName = "/backup.BackupService/StreamBackup"
+	MediaAgentService_StreamBackup_FullMethodName  = "/backup.MediaAgentService/StreamBackup"
+	MediaAgentService_StreamRestore_FullMethodName = "/backup.MediaAgentService/StreamRestore"
 )
 
-// BackupServiceClient is the client API for BackupService service.
+// MediaAgentServiceClient is the client API for MediaAgentService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
 // Описываем службу резервного копирования
-type BackupServiceClient interface {
+type MediaAgentServiceClient interface {
 	// Метод принимает поток чанков от клиента и возвращает один финальный ответ
 	StreamBackup(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[BackupChunk, BackupResponse], error)
+	// Meтод для восстановления данных
+	StreamRestore(ctx context.Context, in *RestoreRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[RestoreChunk], error)
 }
 
-type backupServiceClient struct {
+type mediaAgentServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewBackupServiceClient(cc grpc.ClientConnInterface) BackupServiceClient {
-	return &backupServiceClient{cc}
+func NewMediaAgentServiceClient(cc grpc.ClientConnInterface) MediaAgentServiceClient {
+	return &mediaAgentServiceClient{cc}
 }
 
-func (c *backupServiceClient) StreamBackup(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[BackupChunk, BackupResponse], error) {
+func (c *mediaAgentServiceClient) StreamBackup(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[BackupChunk, BackupResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &BackupService_ServiceDesc.Streams[0], BackupService_StreamBackup_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &MediaAgentService_ServiceDesc.Streams[0], MediaAgentService_StreamBackup_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,69 +54,109 @@ func (c *backupServiceClient) StreamBackup(ctx context.Context, opts ...grpc.Cal
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type BackupService_StreamBackupClient = grpc.ClientStreamingClient[BackupChunk, BackupResponse]
+type MediaAgentService_StreamBackupClient = grpc.ClientStreamingClient[BackupChunk, BackupResponse]
 
-// BackupServiceServer is the server API for BackupService service.
-// All implementations must embed UnimplementedBackupServiceServer
+func (c *mediaAgentServiceClient) StreamRestore(ctx context.Context, in *RestoreRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[RestoreChunk], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &MediaAgentService_ServiceDesc.Streams[1], MediaAgentService_StreamRestore_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[RestoreRequest, RestoreChunk]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type MediaAgentService_StreamRestoreClient = grpc.ServerStreamingClient[RestoreChunk]
+
+// MediaAgentServiceServer is the server API for MediaAgentService service.
+// All implementations must embed UnimplementedMediaAgentServiceServer
 // for forward compatibility.
 //
 // Описываем службу резервного копирования
-type BackupServiceServer interface {
+type MediaAgentServiceServer interface {
 	// Метод принимает поток чанков от клиента и возвращает один финальный ответ
 	StreamBackup(grpc.ClientStreamingServer[BackupChunk, BackupResponse]) error
-	mustEmbedUnimplementedBackupServiceServer()
+	// Meтод для восстановления данных
+	StreamRestore(*RestoreRequest, grpc.ServerStreamingServer[RestoreChunk]) error
+	mustEmbedUnimplementedMediaAgentServiceServer()
 }
 
-// UnimplementedBackupServiceServer must be embedded to have
+// UnimplementedMediaAgentServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedBackupServiceServer struct{}
+type UnimplementedMediaAgentServiceServer struct{}
 
-func (UnimplementedBackupServiceServer) StreamBackup(grpc.ClientStreamingServer[BackupChunk, BackupResponse]) error {
+func (UnimplementedMediaAgentServiceServer) StreamBackup(grpc.ClientStreamingServer[BackupChunk, BackupResponse]) error {
 	return status.Error(codes.Unimplemented, "method StreamBackup not implemented")
 }
-func (UnimplementedBackupServiceServer) mustEmbedUnimplementedBackupServiceServer() {}
-func (UnimplementedBackupServiceServer) testEmbeddedByValue()                       {}
+func (UnimplementedMediaAgentServiceServer) StreamRestore(*RestoreRequest, grpc.ServerStreamingServer[RestoreChunk]) error {
+	return status.Error(codes.Unimplemented, "method StreamRestore not implemented")
+}
+func (UnimplementedMediaAgentServiceServer) mustEmbedUnimplementedMediaAgentServiceServer() {}
+func (UnimplementedMediaAgentServiceServer) testEmbeddedByValue()                           {}
 
-// UnsafeBackupServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to BackupServiceServer will
+// UnsafeMediaAgentServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to MediaAgentServiceServer will
 // result in compilation errors.
-type UnsafeBackupServiceServer interface {
-	mustEmbedUnimplementedBackupServiceServer()
+type UnsafeMediaAgentServiceServer interface {
+	mustEmbedUnimplementedMediaAgentServiceServer()
 }
 
-func RegisterBackupServiceServer(s grpc.ServiceRegistrar, srv BackupServiceServer) {
-	// If the following call panics, it indicates UnimplementedBackupServiceServer was
+func RegisterMediaAgentServiceServer(s grpc.ServiceRegistrar, srv MediaAgentServiceServer) {
+	// If the following call panics, it indicates UnimplementedMediaAgentServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&BackupService_ServiceDesc, srv)
+	s.RegisterService(&MediaAgentService_ServiceDesc, srv)
 }
 
-func _BackupService_StreamBackup_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(BackupServiceServer).StreamBackup(&grpc.GenericServerStream[BackupChunk, BackupResponse]{ServerStream: stream})
+func _MediaAgentService_StreamBackup_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(MediaAgentServiceServer).StreamBackup(&grpc.GenericServerStream[BackupChunk, BackupResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type BackupService_StreamBackupServer = grpc.ClientStreamingServer[BackupChunk, BackupResponse]
+type MediaAgentService_StreamBackupServer = grpc.ClientStreamingServer[BackupChunk, BackupResponse]
 
-// BackupService_ServiceDesc is the grpc.ServiceDesc for BackupService service.
+func _MediaAgentService_StreamRestore_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(RestoreRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(MediaAgentServiceServer).StreamRestore(m, &grpc.GenericServerStream[RestoreRequest, RestoreChunk]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type MediaAgentService_StreamRestoreServer = grpc.ServerStreamingServer[RestoreChunk]
+
+// MediaAgentService_ServiceDesc is the grpc.ServiceDesc for MediaAgentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var BackupService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "backup.BackupService",
-	HandlerType: (*BackupServiceServer)(nil),
+var MediaAgentService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "backup.MediaAgentService",
+	HandlerType: (*MediaAgentServiceServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "StreamBackup",
-			Handler:       _BackupService_StreamBackup_Handler,
+			Handler:       _MediaAgentService_StreamBackup_Handler,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "StreamRestore",
+			Handler:       _MediaAgentService_StreamRestore_Handler,
+			ServerStreams: true,
 		},
 	},
 	Metadata: "api/proto/backup.proto",

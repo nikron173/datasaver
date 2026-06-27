@@ -5,7 +5,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/nikron173/datasaver/internal/media"
+	agent "github.com/nikron173/datasaver/internal/mediaagent"
 	"github.com/nikron173/datasaver/internal/pb"
 	"google.golang.org/grpc"
 )
@@ -19,7 +19,7 @@ func main() {
 	fmt.Println("[MEDIA-SERVER] Инициализация Сервера Хранения...")
 
 	// 2. Создаем провайдер локального дискового хранилища
-	diskStorage, err := media.NewLocalDiskStorage(storageDir)
+	diskStorage, err := agent.NewLocalDiskStorage(storageDir)
 	if err != nil {
 		fmt.Printf("[MEDIA-SERVER] Не удалось инициализировать папку хранилища: %v\n", err)
 		os.Exit(1)
@@ -36,8 +36,8 @@ func main() {
 	grpcServer := grpc.NewServer()
 
 	// 5. Создаем наш бизнес-сервер бэкапа и регистрируем его в gRPC
-	backupServer := media.NewBackupServer(diskStorage)
-	pb.RegisterBackupServiceServer(grpcServer, backupServer)
+	backupServer := agent.NewMediaAgentServer(diskStorage)
+	pb.RegisterMediaAgentServiceServer(grpcServer, backupServer)
 
 	fmt.Printf("[MEDIA-SERVER] Успешно запущен! Слушает порт %s\n", port)
 	fmt.Printf("[MEDIA-SERVER] Все входящие бэкапы будут сохраняться в: %s\n", storageDir)
