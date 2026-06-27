@@ -1,4 +1,4 @@
-package backup
+package diskagent
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 
 type NetworkSink struct {
 	conn   *grpc.ClientConn
-	stream pb.BackupService_StreamBackupClient
+	stream pb.MediaAgentService_StreamBackupClient
 }
 
 // NewNetworkSink создает gRPC-клиента
@@ -28,7 +28,7 @@ func NewNetworkSink(serverAddr string) (*NetworkSink, error) {
 	}
 
 	// 2. Создаем gRPC клиент из сгенерированного protobuf-пакета
-	grpcClient := pb.NewBackupServiceClient(conn)
+	grpcClient := pb.NewMediaAgentServiceClient(conn)
 
 	// 3. Открываем сетевой стрим с ограничением по времени на установку связи (5 секунд).
 	// Если сервер выключен, функция StreamBackup завершится ошибкой в течение 5 секунд.

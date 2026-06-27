@@ -6,9 +6,12 @@ package backup;
 option go_package = "internal/pb";
 
 // Описываем службу резервного копирования
-service BackupService {
+service MediaAgentService {
   // Метод принимает поток чанков от клиента и возвращает один финальный ответ
   rpc StreamBackup (stream BackupChunk) returns (BackupResponse);
+
+  // Meтод для восстановления данных
+  rpc StreamRestore (RestoreRequest) returns (stream RestoreChunk);
 }
 
 // Структура одного сетевого пакета (чанка) в потоке
@@ -34,4 +37,15 @@ message BackupResponse {
   int64  total_files   = 2; // Сколько файлов было обработано
   int64  total_bytes   = 3; // Сколько байт (несжатых) получено
   string error_message = 4; // Описание ошибки, если success == false
+}
+
+message RestoreRequest {
+  string session_id = 1;
+}
+
+message RestoreChunk {
+  oneof payload {
+    FileMetadata metadata = 1;
+    bytes data_block = 2;
+  }
 }

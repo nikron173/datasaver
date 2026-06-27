@@ -1,4 +1,4 @@
-package backup
+package diskagent
 
 import (
 	"os"
@@ -39,6 +39,11 @@ func (ls *LocalSink) WriteChunk(data []byte) error {
 }
 
 func (ls *LocalSink) Close() error {
-	// Важно закрывать в правильном порядке
-	return ls.archiveWriter.Close()
+	if err := ls.archiveWriter.Close(); err != nil {
+		return err
+	}
+	if err := ls.file.Close(); err != nil {
+		return err
+	}
+	return nil
 }

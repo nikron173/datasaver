@@ -1,33 +1,37 @@
-package media
+package mediaagent
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"time"
+
+	"google.golang.org/grpc"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/nikron173/datasaver/internal/archive"
 	"github.com/nikron173/datasaver/internal/pb"
 )
 
-// BackupServer реализует gRPC службу BackupService
-type BackupServer struct {
-	pb.UnimplementedBackupServiceServer // Обязательно для совместимости с gRPC в Go
-	Storage                             TargetStorage
+// MediaAgentServer реализует gRPC службу BackupService
+type MediaAgentServer struct {
+	pb.UnimplementedMediaAgentServiceServer // Обязательно для совместимости с gRPC в Go
+	Storage                                 TargetStorage
 }
 
-func NewBackupServer(storage TargetStorage) *BackupServer {
-	return &BackupServer{Storage: storage}
+func NewMediaAgentServer(storage TargetStorage) *MediaAgentServer {
+	return &MediaAgentServer{Storage: storage}
 }
 
 // StreamBackup обрабатывает входящий gRPC поток от Disk Agent
-func (s *BackupServer) StreamBackup(stream pb.BackupService_StreamBackupServer) error {
+func (mas *MediaAgentServer) StreamBackup(stream pb.MediaAgentService_StreamBackupServer) error {
 	// 1. Генерируем ID сессии бэкапа (для MVP на основе временной метки)
 	sessionID := fmt.Sprintf("session-%d", time.Now().UnixNano())
 	fmt.Printf("[MEDIA-SERVER] Открыта новая сетевая сессия бэкапа: %s\n", sessionID)
 
 	// 2. Открываем таргет в хранилище (получаем io.WriteCloser)
-	storageWriter, err := s.Storage.OpenSession(sessionID)
+	storageWriter, err := mas.Storage.OpenSession(sessionID)
 	if err != nil {
 		return fmt.Errorf("ошибка инициализации хранилища: %w", err)
 	}
@@ -99,4 +103,71 @@ func (s *BackupServer) StreamBackup(stream pb.BackupService_StreamBackupServer) 
 	}
 
 	return stream.SendAndClose(response)
+}
+
+func (mas *MediaAgentServer) StreamRestore(req *pb.RestoreRequest, stream grpc.ServerStreamingServer[pb.RestoreChunk]) error {
+	archivePath, err := mas.Storage.FindSession(req.SessionId)
+	if err != nil {
+		slog.Error("archive not found",
+			slog.String("sessionID", req.SessionId),
+			slog.String("err", err.Error()),
+		)
+		return err
+	}
+	defer archivePath.Close()
+
+	// 3. Накладываем ZSTD компрессию «на лету» на стороне сервера.
+	// Сервер будет сжимать сырые чанки данных, приходящие по сети.
+	zstdReader, err := zstd.NewReader(archivePath)
+	if err != nil {
+		slog.Error("ошибка инициализации ZSTD на сервере", slog.String("err", err.Error()))
+		return fmt.Errorf("ошибка инициализации ZSTD на сервере: %w", err)
+	}
+	defer zstdReader.Close()
+
+	archiveReader := archive.NewArchiveReader(zstdReader.IOReadCloser())
+
+	buffer := make([]byte, 64*1024)
+
+	for {
+		meta, originalPath, err := archiveReader.ReadFileMetadata()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		slog.Info("start send file", slog.String("path", originalPath), slog.Int64("size", meta.Size))
+		err = stream.Send(&pb.RestoreChunk{
+			Payload: &pb.RestoreChunk_Metadata{
+				Metadata: &pb.FileMetadata{
+					FilePath: originalPath,
+					Size:     meta.Size,
+					Mode:     meta.Mode,
+				},
+			},
+		})
+		if err != nil {
+			slog.Error("error send metadata", slog.String("err", err.Error()))
+			return err
+		}
+
+		limitedReader := io.LimitReader(zstdReader, meta.Size)
+		for {
+			n, err := limitedReader.Read(buffer)
+			if n > 0 {
+				err := stream.Send(&pb.RestoreChunk{
+					Payload: &pb.RestoreChunk_DataBlock{DataBlock: buffer[:n]},
+				})
+				if err != nil {
+					return err
+				}
+			}
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
